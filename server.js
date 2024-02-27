@@ -1,43 +1,51 @@
-const express=require('express');
-const app=express();
-const port= 8080;
+const express = require('express');
+const bodyParser = require('body-parser');
+const { Pool } = require('pg');
 
-const bodyParser=require('body-parser'); 
+const app = express();
+const port = 8080;
 
 app.use(express.static(__dirname));
+app.use(bodyParser.urlencoded({ extended: false }));
+
+const pool = new Pool({
+    user: 'postgres',
+    host: 'postgres',
+    database: 'postgres',
+    password: 'password',
+    port: 5432,
+});
 app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/form/form.html");
+    res.sendFile(__dirname + "/form/form.html");
+});
+app.post('/add', async (req, res) => {
+
+  const f_name=req.body.fname;
+  const mail = req.body.mail;
+  const phone = req.body.phone;
+  console.log(req.body);
+  try {
+    // try to send data to the database
+    const query = `
+      INSERT INTO Form(f_name, mail,phone)
+      VALUES ($1,$2,$3)
+      RETURNING id;
+    `;
+    console.log(query);
+    const values = [f_name, mail,phone];
+      console.log(values);
+      const result = await pool.query(query, values)
+      const insertedId = result.rows[0].id;
+      await pool.end();
+    // res.status(201).send({ id: id+1 });
+    res.status(201).send({ id: insertedId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('some error has occured');
+  }
 });
 
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}!`);
+});
 
-app.use(bodyParser.urlencoded({extended: false}))
-app.get('/submit',function(req,res){
-  console.log("Data Saved");
-})
-
-const {Pool,Client}= require('pg');
-const connectionString='postgressql://postgres:password@localhost:5432/postgres'
-const client= new Client({
-    connectionString:connectionString
-})
-
-
-app.post("/",(req,res)=>{
-    const { f_name,mail,phone}=req.body
-    client.connect()
-    client.query('INSERT INTO Form VALUES ($1, $2, $3)', [f_name, mail,phone], (err,res)=> {
-        console.log(err,res);
-        client.end() 
-        //alert("Data Saved");
-        
-
-    })
-   
-    res.sendFile(__dirname + "/form/form.html");
-  })
-
-
-
-  app.listen(port, () => {
-    console.log(`Example app listening on port ${port}!`)
-  });
