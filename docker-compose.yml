@@ -1,11 +1,13 @@
 version: '3.8'
 services:
     app:
-        build: .
+        build:
+            dockerfile: Dockerfile
         depends_on:
             - postgres
         volumes:
             - ./:/usr/src/app/
+            - '/usr/src/app/node_modules'
         ports:
             - "8080:8080"
     postgres:
